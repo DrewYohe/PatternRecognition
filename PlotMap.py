@@ -10,12 +10,12 @@ from shapely.geometry import Point
 checkBorder = False
 
 df = pd.read_csv("db/minidb.csv")
-filtered_df = df[(df['UTC_DATE'] == 20230606) & (df["UTC_TIME"] == 100) & (df['T_CALC'] != -9999) & (df['LONGITUDE'] > -130) & (df['LONGITUDE'] < -60) & (df['LATTITUDE'] > 25) & (df['LATTITUDE'] < 50)]
+filtered_df = df[(df['T_CALC'] != -9999) & (df['LONGITUDE'] > -130) & (df['LONGITUDE'] < -60) & (df['LATTITUDE'] > 25) & (df['LATTITUDE'] < 50)]
 # Sample longitude and latitude data
 lon = filtered_df['LONGITUDE'] # Sample longitudes for 100 points
 lat = filtered_df['LATTITUDE']      # Sample latitudes for 100 points
 data = filtered_df['T_CALC']                 # Sample data to plot as colormap
-
+print(np.min(data))
 
 # Load the shapefile of the US border
 us_border = gpd.read_file("geo/cb_2022_us_nation_20m.shx")
