@@ -12,6 +12,7 @@ import cartopy.feature as cfeature
 import pandas as pd
 import geopandas as gpd
 from scipy.interpolate import griddata
+from scipy.interpolate import RegularGridInterpolator
 from shapely.geometry import Point
 
 num_weather_centers = 130;
@@ -22,8 +23,10 @@ input_size = 2
 hidden_size = 256
 output_size = 1
 num_epochs = 256
-batch_size = 2
-learning_rate = 0.001 
+batch_size = 10
+learning_rate = 0.00005
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 #Per run params
 train_densification = True
@@ -109,6 +112,22 @@ def DisplayMap(lons, lats, data, this_df, date_time, param = "T_CALC", check_bor
     # Set plot extent to the United States
     ax.set_extent([-125, -65, 20, 50], ccrs.PlateCarree())
 
+    error = 0
+    stations = 0
+    interp_func = RegularGridInterpolator((np.linspace(-130, -60, lon_size), np.linspace(25, 50, lat_size)), np.transpose(data_grid))
+    for index, row in filtered_df.iterrows():
+        tempGuess = interp_func([row["LONGITUDE"],row["LATTITUDE"]])
+        stations += 1
+        if str(tempGuess[0]) != 'nan':
+            error += np.abs(row[param] - tempGuess[0])*np.abs(row[param] - tempGuess[0])
+        else:
+            #Unable to classify
+            error += np.abs(row[param])*np.abs(row[param])
+
+    error = error/stations
+    error = np.round(error, 2)
+    print(f"The error is {error}")
+
     # Show the plot
     plt.title(param)
     plt.show()
@@ -121,7 +140,7 @@ def DisplayLinearInterpolatedMap(this_df, date_time, param = "T_CALC"):
     DisplayMap(lon, lat, data, this_df, date_time, param)
 
 def DisplayDensifiedMap(this_df, date_time, param = "T_CALC"):
-    filtered_df = this_df[(this_df["DATETIME"]==date_time) & (this_df[param]>-9999)]
+    filtered_df = this_df[(this_df["DATETIME"]==date_time) & (this_df[param]>-99)]
     densification_net = TrainDensificationModel(filtered_df,date_time,param)
     lon = np.linspace(-130, -60, lon_size)
     lat = np.linspace(25, 50, lat_size)
@@ -142,27 +161,29 @@ def DisplayDensifiedMap(this_df, date_time, param = "T_CALC"):
 def TrainDensificationModel(this_df,date_time, param = "T_CALC"):
     x_train = []
     y_train = []
-    df_one_date_time = this_df[(this_df["DATETIME"] == date_time) & (this_df[param]>-9999)]
+    df_one_date_time = this_df[(this_df["DATETIME"] == date_time) & (this_df[param]>-99)]
     for index, row in df_one_date_time.iterrows():
         x_train.append([(row['LONGITUDE']+130.0)/35, (row['LATTITUDE']-37.5)/12.5])
         y_train.append(row[param]/param_scale)
-    x_train = torch.FloatTensor(x_train)
-    y_train = torch.FloatTensor(y_train)
+    x_train = torch.FloatTensor(x_train, device=device)
+    y_train = torch.FloatTensor(y_train, device=device)
     # Create DataLoader
     train_dataset = TensorDataset(x_train, y_train)
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
     # Initialize the model
-    model = Densify(input_size, hidden_size, output_size)
+    model = Densify(input_size, hidden_size, output_size).to(device)
 
     # Define loss function and optimizer
     criterion = nn.MSELoss()
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
     # Training loop
+    print("Starting Training")
     for epoch in range(num_epochs):
         running_loss = 0.0
         for inputs, targets in train_loader:
+            inputs, targets = inputs.to(device), targets.to(device)
             # Forward pass
             outputs = model(inputs)
             loss = criterion(outputs, targets.unsqueeze(1))
@@ -205,10 +226,6 @@ else:
     df = df[((df['LONGITUDE'] > -130) & (df['LONGITUDE'] < -60) & (df['LATTITUDE'] > 25) & (df['LATTITUDE'] < 50))]
     df["DATETIME"] = df["UTC_DATE"].astype(str)+df["UTC_TIME"].astype(str)
 
-if train_densification:
-    print("Starting Training")
     
-else:
-    densification_model = torch.load("model/DensificationModel.pt")
 
 DisplayDensifiedMap(df, "20230101"+"1200","T_CALC")

@@ -1,0 +1,19 @@
+Case 1:
+Original dense map squared error: 19.2
+Reduced (14x5): 29.77
+Expanded (280x100): 29.02
+
+Case 2:
+Original dense map squared error: 15.27
+Reduced (28x10): 20.38
+Expanded (280x100): 19.58
+
+Case 3:
+Original dense map squared error: 15.37
+Reduced (56x20): 17.24
+Expanded (280x100): 17.03
+
+Case 4:
+Original dense map squared error: 15.69
+Reduced (140x50): 15.76
+Expanded (280x100): 15.72

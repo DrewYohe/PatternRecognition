@@ -63,9 +63,9 @@ def main(directory_url,year):
 
 
 if __name__ == "__main__":
-    startYear = 2013
-    endYear = 2024
+    startYear = 2024
+    endYear = 2025
     for i in range(startYear,endYear):
     	print("Parsing "+str(i))
     	main("https://www.ncei.noaa.gov/pub/data/uscrn/products/hourly02/"+str(i)+"/",i)
-    pd.concat(df).to_csv("db.csv")
+    pd.concat(df).to_csv("db/db_2024.csv")
