@@ -18,13 +18,13 @@ from shapely.geometry import Point
 num_weather_centers = 130;
 lon_size = 280
 lat_size = 100
-param_scale = 50.0
+param_scale = 5.0
 input_size = 2
 hidden_size = 256
 output_size = 1
 num_epochs = 256
-batch_size = 10
-learning_rate = 0.00005
+batch_size = 6
+learning_rate = 0.0003
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -107,7 +107,7 @@ def DisplayMap(lons, lats, data, this_df, date_time, param = "T_CALC", check_bor
 
     # Add colorbar
     cbar = plt.colorbar(sc, ax=ax, orientation='vertical', shrink=0.5)
-    cbar.set_label('Temperature °C')
+    cbar.set_label('Precipitation')
 
     # Set plot extent to the United States
     ax.set_extent([-125, -65, 20, 50], ccrs.PlateCarree())
@@ -228,4 +228,4 @@ else:
 
     
 
-DisplayDensifiedMap(df, "20230101"+"1200","T_CALC")
+DisplayDensifiedMap(df, "20230407"+"1200","P_CALC")
